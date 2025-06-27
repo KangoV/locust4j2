@@ -1,8 +1,8 @@
 package com.github.myzhan.locust4j.message;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author myzhan
@@ -15,7 +15,7 @@ public class TestLongIntMap {
         map.add(1000L);
         map.add(1000L);
 
-        assertEquals(2, (int)map.get(1000L));
+        assertThat((int)map.get(1000L)).isEqualTo(2);
     }
 
     @Test
@@ -24,6 +24,6 @@ public class TestLongIntMap {
         map.add(1000L);
         map.add(1000L);
 
-        assertEquals("{1000=2}", map.toString());
+        assertThat(map.toString()).isEqualTo("{1000=2}");
     }
 }

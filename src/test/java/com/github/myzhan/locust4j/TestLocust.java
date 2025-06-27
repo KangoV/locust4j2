@@ -60,7 +60,7 @@ public class TestLocust {
     }
 
     @Test
-    public void TestDefaultRateLimiter() {
+    public void   TestDefaultRateLimiter() {
         Locust.getInstance().setMaxRPS(1000);
         AbstractRateLimiter rateLimiter = Locust.getInstance().getRateLimiter();
 
