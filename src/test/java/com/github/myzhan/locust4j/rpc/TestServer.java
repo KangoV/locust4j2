@@ -30,32 +30,30 @@ public class TestServer {
         this.bindPort = bindPort;
     }
 
-    public void start() {
+    public TestServer start() {
         routerSocket = context.createSocket(ZMQ.ROUTER);
         routerSocket.bind(String.format("tcp://%s:%d", bindHost, bindPort));
 
-        serverThread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    while (true) {
-                        byte[] packet = routerSocket.recv();
-                        if (Arrays.equals(packet, "testClient".getBytes())) {
-                            routerSocket.sendMore(packet);
-                            continue;
-                        }
-                        Message message = new Message(packet);
-                        routerSocket.send(message.getBytes(), 0);
+        serverThread = new Thread(() -> {
+            try {
+                while (true) {
+                    byte[] packet = routerSocket.recv();
+                    if (Arrays.equals(packet, "testClient".getBytes())) {
+                        routerSocket.sendMore(packet);
+                        continue;
                     }
-                } catch (ZMQException ex) {
-                    // ignore ZMQException, it may be interrupted.
-                } catch (IOException ex) {
-                    logger.error(ex.getMessage());
+                    var message = Message.from(packet);
+                    routerSocket.send(message.bytes(), 0);
                 }
+            } catch (ZMQException ex) {
+                // ignore ZMQException, it may be interrupted.
+            } catch (IOException ex) {
+                logger.error(ex.getMessage());
             }
         });
 
         serverThread.start();
+        return this;
     }
 
     public void stop() {

@@ -1,47 +1,27 @@
 package com.github.myzhan.locust4j.stats;
 
+import com.github.myzhan.locust4j.utils.ImmutableStyle;
+import org.immutables.value.Value;
+
+import java.util.function.UnaryOperator;
+
 /**
  * @author myzhan
  */
-public class RequestSuccess {
-    private String requestType;
-    private String name;
-    private long responseTime;
-    private long contentLength;
+@Value.Immutable
+@ImmutableStyle
+public interface RequestSuccess {
 
-    public RequestSuccess() {
+    class Builder extends RequestSuccessImpl.Builder {}
 
-    }
+    static RequestSuccess create(UnaryOperator<Builder> spec) { return spec.apply(builder()).build(); }
+    static RequestSuccess createRequestFailure(UnaryOperator<Builder> spec) { return create(spec); }
+    static RequestSuccess.Builder builder(UnaryOperator<Builder> spec) { return spec.apply(builder()); }
+    static RequestSuccess.Builder builder() { return new Builder(); }
 
-    public String getRequestType() {
-        return requestType;
-    }
+    String getRequestType();
+    String getName();
+    long getResponseTime();
+    long getContentLength();
 
-    public void setRequestType(String requestType) {
-        this.requestType = requestType;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getResponseTime() {
-        return responseTime;
-    }
-
-    public void setResponseTime(long responseTime) {
-        this.responseTime = responseTime;
-    }
-
-    public long getContentLength() {
-        return contentLength;
-    }
-
-    public void setContentLength(long contentLength) {
-        this.contentLength = contentLength;
-    }
 }

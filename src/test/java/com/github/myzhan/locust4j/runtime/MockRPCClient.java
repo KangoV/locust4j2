@@ -35,11 +35,10 @@ public class MockRPCClient implements Client {
 
     public void send(Message message) {
         // simulator sending the ack
-        if ("client_ready".equals(message.getType())) {
+        if ("client_ready".equals(message.type())) {
             Map<String, Object> data = new HashMap<>(1);
             data.put("index", 1);
-            fromServerQueue.offer(new Message(
-                    "ack", data, -1, "test"));
+            fromServerQueue.offer(Message.create(s -> s.type("ack").putAllData(data).nodeId("test")));
             return;
         }
 

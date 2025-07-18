@@ -1,47 +1,27 @@
 package com.github.myzhan.locust4j.stats;
 
+import com.github.myzhan.locust4j.utils.ImmutableStyle;
+import org.immutables.value.Value;
+
+import java.util.function.UnaryOperator;
+
 /**
  * @author myzhan
  */
-public class RequestFailure {
-    private String requestType;
-    private String name;
-    private long responseTime;
-    private String error;
+@Value.Immutable
+@ImmutableStyle
+public interface RequestFailure {
 
-    public RequestFailure() {
+    class Builder extends RequestFailureImpl.Builder {}
 
-    }
+    static RequestFailure create(UnaryOperator<Builder> spec) { return spec.apply(builder()).build(); }
+    static RequestFailure createRequestFailure(UnaryOperator<Builder> spec) { return create(spec); }
+    static Builder builder(UnaryOperator<Builder> spec) { return spec.apply(builder()); }
+    static Builder builder() { return new Builder(); }
 
-    public String getRequestType() {
-        return requestType;
-    }
+    String getRequestType();
+    String getName();
+    long getResponseTime();
+    String getError();
 
-    public void setRequestType(String requestType) {
-        this.requestType = requestType;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public long getResponseTime() {
-        return responseTime;
-    }
-
-    public void setResponseTime(long responseTime) {
-        this.responseTime = responseTime;
-    }
-
-    public String getError() {
-        return error;
-    }
-
-    public void setError(String error) {
-        this.error = error;
-    }
 }

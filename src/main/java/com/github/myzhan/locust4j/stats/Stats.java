@@ -14,6 +14,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 
 import com.github.myzhan.locust4j.utils.Utils;
 import org.slf4j.Logger;
@@ -82,13 +84,18 @@ public class Stats implements Runnable {
         threadPool.shutdownNow();
     }
 
-    public Queue<RequestSuccess> getReportSuccessQueue() {
-        return this.reportSuccessQueue;
+
+    private Failures failures = new Failures();
+    private Successes successes = new Successes();
+
+    public Failures failures() {
+        return failures;
+    }
+    public Successes successes() {
+        return successes;
     }
 
-    public Queue<RequestFailure> getReportFailureQueue() {
-        return this.reportFailureQueue;
-    }
+
 
     public Queue<Boolean> getClearStatsQueue() {
         return this.clearStatsQueue;
@@ -205,35 +212,24 @@ public class Stats implements Runnable {
     }
 
     protected List<Map<String, Object>> serializeStats() {
-        List<Map<String, Object>> entries = new ArrayList<>(this.entries.size());
-        for (Map.Entry<String, StatsEntry> item : this.entries.entrySet()) {
-            StatsEntry entry = item.getValue();
-            if (!(entry.getNumRequests() == 0 && entry.getNumFailures() == 0)) {
-                entries.add(entry.getStrippedReport());
-            }
-        }
-        return entries;
+        return this.entries.values().stream()
+            .filter(StatsEntry::canReport)
+            .map(StatsEntry::getStrippedReport)
+            .toList();
     }
 
     public Map<String, Map<String, Object>> serializeErrors() {
-        Map<String, Map<String, Object>> errors = new HashMap<>(8);
-        for (Map.Entry<String, StatsError> item : this.errors.entrySet()) {
-            String key = item.getKey();
-            StatsError error = item.getValue();
-            errors.put(key, error.toMap());
-        }
-        return errors;
+        return this.errors.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey,v -> v.getValue().toMap()));
     }
 
     protected Map<String, Object> collectReportData() {
-        Map<String, Object> data = new HashMap<>(3);
-
-        data.put("stats", this.serializeStats());
-        data.put("stats_total", this.total.getStrippedReport());
-        data.put("errors", this.serializeErrors());
-
+        var data = Map.of(
+            "stats",       this.serializeStats(),
+            "stats_total", this.total.getStrippedReport(),
+            "errors",      this.serializeErrors()
+        );
         errors.clear();
-
         return data;
     }
 
@@ -265,6 +261,45 @@ public class Stats implements Runnable {
                 stats.timeToReportQueue.offer(true);
                 stats.wakeMeUp();
             }
+        }
+    }
+
+    public class Failures {
+        public void offer(RequestFailure requestFailure) {
+            reportFailureQueue.offer(requestFailure);
+        }
+        public void offer(UnaryOperator<RequestFailure.Builder> spec) {
+            offer(RequestFailure.create(spec));
+        }
+        public void add(RequestFailure requestFailure) {
+            reportFailureQueue.add(requestFailure);
+        }
+        public void add(UnaryOperator<RequestFailure.Builder> spec) {
+            add(RequestFailure.create(spec));
+        }
+        public RequestFailure pop() {
+            return reportFailureQueue.poll();
+        }
+        public void clear() {
+            reportFailureQueue.clear();
+        }
+    }
+
+    public class Successes {
+        public void offer(RequestSuccess requestSuccess) {
+            reportSuccessQueue.offer(requestSuccess);
+        }
+        public void offer(UnaryOperator<RequestSuccess.Builder> spec) {
+            offer(RequestSuccess.create(spec));
+        }
+        public void add(RequestSuccess requestSuccess) {
+            reportSuccessQueue.add(requestSuccess);
+        }
+        public void add(UnaryOperator<RequestSuccess.Builder> spec) {
+            add(RequestSuccess.create(spec));
+        }
+        public RequestSuccess pop() {
+            return reportSuccessQueue.poll();
         }
     }
 

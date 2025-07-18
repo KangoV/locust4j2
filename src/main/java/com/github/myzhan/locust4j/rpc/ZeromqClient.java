@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.github.myzhan.locust4j.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.zeromq.SocketType;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
@@ -26,7 +27,7 @@ public class ZeromqClient implements Client {
 
     public ZeromqClient(String host, int port, String nodeID) {
         this.identity = nodeID;
-        this.dealerSocket = context.socket(ZMQ.DEALER);
+        this.dealerSocket = context.socket(SocketType.DEALER);
         this.dealerSocket.setIdentity(this.identity.getBytes());
         boolean connected = this.dealerSocket.connect(String.format("tcp://%s:%d", host, port));
         if (connected) {
@@ -41,7 +42,7 @@ public class ZeromqClient implements Client {
     public Message recv() throws IOException {
         try {
             byte[] bytes = this.dealerSocket.recv();
-            return new Message(bytes);
+            return Message.create(s -> s.from(bytes));
         } catch (ZMQException ex) {
             throw new IOException("Failed to receive ZeroMQ message", ex);
         }
@@ -49,7 +50,7 @@ public class ZeromqClient implements Client {
 
     @Override
     public void send(Message message) throws IOException {
-        byte[] bytes = message.getBytes();
+        byte[] bytes = message.bytes();
         this.dealerSocket.send(bytes);
     }
 

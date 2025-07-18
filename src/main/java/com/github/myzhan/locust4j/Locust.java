@@ -265,12 +265,12 @@ public class Locust {
      * @since 1.0.0
      */
     public void recordSuccess(String requestType, String name, long responseTime, long contentLength) {
-        RequestSuccess success = new RequestSuccess();
-        success.setRequestType(requestType);
-        success.setName(name);
-        success.setResponseTime(responseTime);
-        success.setContentLength(contentLength);
-        Stats.getInstance().getReportSuccessQueue().offer(success);
+        var success = RequestSuccess.create(s -> s
+            .requestType(requestType)
+            .name(name)
+            .responseTime(responseTime)
+            .contentLength(contentLength));
+        Stats.getInstance().successes().offer(success);
         Stats.getInstance().wakeMeUp();
     }
 
@@ -284,12 +284,12 @@ public class Locust {
      * @since 1.0.0
      */
     public void recordFailure(String requestType, String name, long responseTime, String error) {
-        RequestFailure failure = new RequestFailure();
-        failure.setRequestType(requestType);
-        failure.setName(name);
-        failure.setResponseTime(responseTime);
-        failure.setError(error);
-        Stats.getInstance().getReportFailureQueue().offer(failure);
+        var failure = RequestFailure.create(s -> s
+            .requestType(requestType)
+            .name(name)
+            .responseTime(responseTime)
+            .error(error));
+        Stats.getInstance().failures().offer(failure);
         Stats.getInstance().wakeMeUp();
     }
 

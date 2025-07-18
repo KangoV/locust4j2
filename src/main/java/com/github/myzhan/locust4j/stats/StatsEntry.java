@@ -10,8 +10,9 @@ import com.github.myzhan.locust4j.utils.Utils;
  * @author myzhan
  */
 public class StatsEntry {
-    private String name;
-    private String method = "";
+
+    private final String name;
+    private final String method;
     private long numRequests;
     private long numFailures;
     private long totalResponseTime;
@@ -25,7 +26,7 @@ public class StatsEntry {
     private long lastRequestTimestamp;
 
     public StatsEntry(String name) {
-        this.name = name;
+        this(name, "");
     }
 
     public StatsEntry(String name, String method) {
@@ -92,8 +93,7 @@ public class StatsEntry {
 
     public void logError(String error) {
         this.numFailures++;
-        long now = Utils.currentTimeInSeconds();
-        this.numFailPerSec.add(now);
+        this.numFailPerSec.add(Utils.currentTimeInSeconds());
     }
 
     public Map<String, Object> serialize() {
@@ -127,95 +127,40 @@ public class StatsEntry {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getMethod() {
         return method;
-    }
-
-    public void setMethod(String method) {
-        this.method = method;
     }
 
     public long getNumRequests() {
         return numRequests;
     }
 
-    public void setNumRequests(long numRequests) {
-        this.numRequests = numRequests;
-    }
-
     public long getNumFailures() {
         return numFailures;
-    }
-
-    public void setNumFailures(long numFailures) {
-        this.numFailures = numFailures;
     }
 
     public long getTotalResponseTime() {
         return totalResponseTime;
     }
 
-    public void setTotalResponseTime(long totalResponseTime) {
-        this.totalResponseTime = totalResponseTime;
-    }
-
     public long getMinResponseTime() {
         return minResponseTime;
-    }
-
-    public void setMinResponseTime(long minResponseTime) {
-        this.minResponseTime = minResponseTime;
     }
 
     public long getMaxResponseTime() {
         return maxResponseTime;
     }
 
-    public void setMaxResponseTime(long maxResponseTime) {
-        this.maxResponseTime = maxResponseTime;
-    }
-
-    public LongIntMap getNumReqsPerSec() {
-        return numReqsPerSec;
-    }
-
-    public void setNumReqsPerSec(LongIntMap numReqsPerSec) {
-        this.numReqsPerSec = numReqsPerSec;
-    }
-
     public LongIntMap getResponseTimes() {
         return responseTimes;
-    }
-
-    public void setResponseTimes(LongIntMap responseTimes) {
-        this.responseTimes = responseTimes;
     }
 
     public long getTotalContentLength() {
         return totalContentLength;
     }
 
-    public void setTotalContentLength(long totalContentLength) {
-        this.totalContentLength = totalContentLength;
+    public boolean canReport() {
+        return getNumRequests() > 0 || getNumFailures() > 0;
     }
 
-    public long getStartTime() {
-        return startTime;
-    }
-
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
-    }
-
-    public long getLastRequestTimestamp() {
-        return lastRequestTimestamp;
-    }
-
-    public void setLastRequestTimestamp(long lastRequestTimestamp) {
-        this.lastRequestTimestamp = lastRequestTimestamp;
-    }
 }

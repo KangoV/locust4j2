@@ -1,6 +1,7 @@
 package com.github.myzhan.locust4j.rpc;
 
 import java.io.IOException;
+import java.util.function.UnaryOperator;
 
 import com.github.myzhan.locust4j.message.Message;
 
@@ -26,6 +27,11 @@ public interface Client {
      * @throws IOException network IO exception
      */
     void send(Message message) throws IOException;
+
+    default void send(UnaryOperator<Message.Builder> spec) throws IOException{
+        var msg = Message.create(spec);
+        send(msg);
+    }
 
     /**
      * close client

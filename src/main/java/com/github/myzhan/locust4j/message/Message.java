@@ -1,56 +1,105 @@
 package com.github.myzhan.locust4j.message;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.function.UnaryOperator;
 
-import org.msgpack.core.MessageBufferPacker;
-import org.msgpack.core.MessageFormat;
-import org.msgpack.core.MessagePack;
-import org.msgpack.core.MessageUnpacker;
+import com.github.myzhan.locust4j.utils.ImmutableStyle;
+import org.immutables.value.Value;
+import org.msgpack.core.*;
 
 /**
  * @author vrajat
  */
-public class Message {
+@ImmutableStyle
+@Value.Immutable
+public abstract class Message {
 
-    private final String type;
-    private final Map<String, Object> data;
-    private int version;
-    private final String nodeID;
+    public static class Builder extends MessageImpl.Builder {
+        public Builder from(byte[] bytes) {
+            try (MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(bytes)) {
+                int arrayHeader = unpacker.unpackArrayHeader();
+                type(unpacker.unpackString());
+                // unpack data
+                if (unpacker.getNextFormat() != MessageFormat.NIL) {
+                    data(Message.unpackMap(unpacker));
+                } else {
+                    unpacker.unpackNil();
+                }
+                if (unpacker.getNextFormat() != MessageFormat.NIL) {
+                    nodeId(unpacker.unpackString());
+                } else {
+                    unpacker.unpackNil();
+                }
+            } catch (IOException ioe) {
+                throw new RuntimeException("Failed to create message from byte array", ioe);
+            }
+            return this;
+        }
+    }
+
+    public static Message from(byte[] bytes) { return create(s -> s.from(bytes)); }
+    public static Message create(UnaryOperator<Builder> spec) { return spec.apply(builder()).build(); }
+    public static Message createMessage(UnaryOperator<Builder> spec) { return create(spec); }
+    public static Builder builder(UnaryOperator<Builder> spec) { return spec.apply(builder()); }
+    public static Builder builder() { return new Builder(); }
+
     private static final String TYPE_CLIENT_READY = "client_ready";
 
-    public Message(String type, Map<String, Object> data, int version, String nodeID) {
-        this.type = type;
-        this.data = data;
-        this.version = version;
-        this.nodeID = nodeID;
+    public abstract String type();
+
+    public abstract Map<String, Object> data();
+
+    public abstract Optional<String> nodeId();
+
+    @Value.Default
+    public int version() {
+        return -1;
     }
 
-    public Message(byte[] bytes) throws IOException {
-        MessageUnpacker unpacker = MessagePack.newDefaultUnpacker(bytes);
+    @Value.Lazy
+    public byte[] bytes() throws IOException {
 
-        int arrayHeader = unpacker.unpackArrayHeader();
-        this.type = unpacker.unpackString();
+        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
+        // a message contains three fields, (type & data & nodeID)
+        packer.packArrayHeader(3);
 
-        // unpack data
-        if (unpacker.getNextFormat() != MessageFormat.NIL) {
-            this.data = Message.unpackMap(unpacker);
+        // pack the first field
+        packer.packString(type());
+
+        // pack the second field
+        if (Message.TYPE_CLIENT_READY.equals(type())) {
+            if (version() == -1) {
+                packer.packInt(version());
+            } else {
+                packer.packNil();
+            }
         } else {
-            unpacker.unpackNil();
-            this.data = null;
+            if (data() != null) {
+                packer.packMapHeader(data().size());
+                for (Map.Entry<String, Object> entry : data().entrySet()) {
+                    packer.packString(entry.getKey());
+                    visit(packer, entry.getValue());
+                }
+            } else {
+                packer.packNil();
+            }
         }
-        if (unpacker.getNextFormat() != MessageFormat.NIL) {
-            this.nodeID = unpacker.unpackString();
-        } else {
-            unpacker.unpackNil();
-            this.nodeID = null;
-        }
-        unpacker.close();
+
+        // pack the third field
+        packer.packString(nodeId().get());
+        byte[] bytes = packer.toByteArray();
+        packer.close();
+        return bytes;
     }
 
-    public static Map<String, Object> unpackMap(MessageUnpacker unpacker) throws IOException {
+    @Override
+    @Value.Lazy
+    public String toString() {
+        return String.format("%s-%s-%s", nodeId().orElse("nodeId?"), type(), data());
+    }
+
+    private static Map<String, Object> unpackMap(MessageUnpacker unpacker) throws IOException {
         int mapSize = unpacker.unpackMapHeader();
         Map<String, Object> result = new HashMap<>(6);
         while (mapSize > 0) {
@@ -63,38 +112,28 @@ public class Message {
             }
             // unpack value
             MessageFormat messageFormat = unpacker.getNextFormat();
-            Object value;
+            Object value =
 
-            switch (messageFormat.getValueType()) {
-                case BOOLEAN:
-                    value = unpacker.unpackBoolean();
-                    break;
-                case FLOAT:
-                    value = unpacker.unpackFloat();
-                    break;
-                case INTEGER:
-                    value = unpacker.unpackInt();
-                    break;
-                case NIL:
-                    value = null;
-                    unpacker.unpackNil();
-                    break;
-                case STRING:
-                    value = unpacker.unpackString();
-                    break;
-                case MAP:
-                    value = unpackMap(unpacker);
-                    break;
-                case ARRAY:
-                    int size = unpacker.unpackArrayHeader();
-                    value = new ArrayList(size);
-                    for(int index = 0; index < size; ++index) {
-                        ((ArrayList) value).add(unpacker.unpackString());
+                switch (messageFormat.getValueType()) {
+                    case BOOLEAN -> unpacker.unpackBoolean();
+                    case FLOAT   -> unpacker.unpackFloat();
+                    case INTEGER -> unpacker.unpackInt();
+                    case STRING  -> unpacker.unpackString();
+                    case MAP     -> unpackMap(unpacker);
+                    case NIL     -> {
+                        unpacker.unpackNil();
+                        yield null;
                     }
-                    break;
-                default:
-                    throw new IOException("Message received unsupported type: " + messageFormat.getValueType());
-            }
+                    case ARRAY -> {
+                        int size = unpacker.unpackArrayHeader();
+                        var val = new ArrayList<>(size);
+                        for (int index = 0; index < size; ++index) {
+                            val.add(unpacker.unpackString());
+                        }
+                        yield val;
+                    }
+                    default -> throw new IOException("Message received unsupported type: " + messageFormat.getValueType());
+                };
             if (null != key) {
                 result.put(key, value);
             }
@@ -103,56 +142,41 @@ public class Message {
         return result;
     }
 
-    public String getType() {
-        return this.type;
-    }
-
-    public Map<String, Object> getData() {
-        return this.data;
-    }
-
-    public String getNodeID() {
-        return this.nodeID;
-    }
-
-    public byte[] getBytes() throws IOException {
-        MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
-        Visitor visitor = new Visitor(packer);
-        // a message contains three fields, (type & data & nodeID)
-        packer.packArrayHeader(3);
-
-        // pack the first field
-        packer.packString(this.type);
-
-        // pack the second field
-        if (Message.TYPE_CLIENT_READY.equals(this.type)) {
-            if (this.version == -1) {
-                packer.packInt(this.version);
-            } else {
-                packer.packNil();
-            }
-        } else {
-            if (this.data != null) {
-                packer.packMapHeader(this.data.size());
-                for (Map.Entry<String, Object> entry : this.data.entrySet()) {
+    @SuppressWarnings("unchecked")
+    static void visit(MessagePacker packer, Object value) throws IOException {
+        switch (value) {
+            case null                   -> packer.packNil();
+            case String s               -> packer.packString(s);
+            case Integer i              -> packer.packInt(i);
+            case Long l                 -> packer.packLong(l);
+            case Boolean b              -> packer.packBoolean(b);
+            case Float v                -> packer.packFloat(v);
+            case Double v               -> packer.packDouble(v);
+            case Map<?,?> m -> {
+                var map = (Map<String,Object>)m;
+                packer.packMapHeader(map.size());
+                for (Map.Entry<String, Object> entry : map.entrySet()) {
                     packer.packString(entry.getKey());
-                    visitor.visit(entry.getValue());
+                    visit(packer, entry.getValue());
                 }
-            } else {
-                packer.packNil();
             }
+            case List<?> l      -> {
+                var list = (List<Object>)l;
+                packer.packArrayHeader(list.size());
+                for (Object object : list) {
+                    visit(packer, object);
+                }
+            }
+            case LongIntMap longIntMap  -> {
+                packer.packMapHeader(longIntMap.internalStore.size());
+                for (Map.Entry<Long, Integer> entry : longIntMap.internalStore.entrySet()) {
+                    packer.packLong(entry.getKey());
+                    packer.packInt(entry.getValue());
+                }
+            }
+            default ->
+                throw new IOException("Cannot pack type unknown type:" + value.getClass().getSimpleName());
         }
-
-        // pack the third field
-        packer.packString(this.nodeID);
-        byte[] bytes = packer.toByteArray();
-        packer.close();
-        return bytes;
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s-%s-%s", nodeID, type, data);
     }
 
 }

@@ -35,7 +35,7 @@ public class WeighingTaskSet extends AbstractTaskSet {
             logger.error("The weight of task {} is {}, ignored.", task.getName(), task.getWeight());
             return;
         }
-        tasks.add(task);
+        super.addTask(task);
 
         Integer nextOffset = offset.addAndGet(task.getWeight());
         randomMap.put(nextOffset, task);

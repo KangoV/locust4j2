@@ -171,7 +171,7 @@ public class TestLocust {
     @Test
     public void TestRecordSuccess() {
         Locust.getInstance().recordSuccess("http", "success", 1, 10);
-        RequestSuccess success = Stats.getInstance().getReportSuccessQueue().poll();
+        RequestSuccess success = Stats.getInstance().successes().pop();
         assertEquals("http", success.getRequestType());
         assertEquals("success", success.getName());
         assertEquals(1, success.getResponseTime());
@@ -180,9 +180,9 @@ public class TestLocust {
 
     @Test
     public void TestRecordFailure() {
-        Stats.getInstance().getReportFailureQueue().clear();
+        Stats.getInstance().failures().clear();
         Locust.getInstance().recordFailure("http", "failure", 1, "error");
-        RequestFailure failure = Stats.getInstance().getReportFailureQueue().poll();
+        RequestFailure failure = Stats.getInstance().failures().pop();
         assertEquals("http", failure.getRequestType());
         assertEquals("failure", failure.getName());
         assertEquals(1, failure.getResponseTime());

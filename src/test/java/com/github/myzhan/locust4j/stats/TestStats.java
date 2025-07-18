@@ -7,10 +7,12 @@ import com.github.myzhan.locust4j.stats.RequestFailure;
 import com.github.myzhan.locust4j.stats.RequestSuccess;
 import com.github.myzhan.locust4j.stats.Stats;
 import com.github.myzhan.locust4j.stats.StatsEntry;
+import com.github.myzhan.locust4j.test.StatsEntryAssert;
 import com.github.myzhan.locust4j.utils.Utils;
 import org.junit.Before;
 import org.junit.Test;
 
+import static com.github.myzhan.locust4j.test.StatsEntryAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -30,19 +32,17 @@ public class TestStats {
     public void TestAll() throws Exception {
         stats.start();
 
-        RequestSuccess success = new RequestSuccess();
-        success.setRequestType("http");
-        success.setName("success");
-        success.setResponseTime(1);
-        success.setContentLength(10);
-        stats.getReportSuccessQueue().add(success);
+        stats.successes().add(s -> s
+            .requestType("http")
+            .name("success")
+            .responseTime(1)
+            .contentLength(10));
 
-        RequestFailure failure = new RequestFailure();
-        failure.setRequestType("http");
-        failure.setName("failure");
-        failure.setResponseTime(1000);
-        failure.setError("timeout");
-        stats.getReportFailureQueue().add(failure);
+        stats.failures().add(s -> s
+            .requestType("http")
+            .name("failure")
+            .responseTime(1000)
+            .error("timeout"));
 
         stats.wakeMeUp();
         Thread.sleep(3100);
@@ -61,19 +61,17 @@ public class TestStats {
     public void TestClearAll() throws Exception {
         stats.start();
 
-        RequestSuccess success = new RequestSuccess();
-        success.setRequestType("http");
-        success.setName("success");
-        success.setResponseTime(1);
-        success.setContentLength(10);
-        stats.getReportSuccessQueue().add(success);
+        stats.successes().add(s -> s
+            .requestType("http")
+            .name("success")
+            .responseTime(1)
+            .contentLength(10));
 
-        RequestFailure failure = new RequestFailure();
-        failure.setRequestType("http");
-        failure.setName("failure");
-        failure.setResponseTime(1000);
-        failure.setError("timeout");
-        stats.getReportFailureQueue().add(failure);
+        stats.failures().add(s -> s
+            .requestType("http")
+            .name("failure")
+            .responseTime(1000)
+            .error("timeout"));
 
         stats.getClearStatsQueue().offer(true);
         stats.wakeMeUp();
@@ -87,33 +85,40 @@ public class TestStats {
 
     @Test
     public void TestLogRequest() {
+
         stats.logRequest("http", "test", 1000L, 2000L);
         stats.logRequest("http", "test", 2000L, 4000L);
         stats.logRequest("udp", "test", 300L, 300L);
 
         StatsEntry entry = stats.get("test", "http");
 
-        assertEquals("test", entry.getName());
-        assertEquals("http", entry.getMethod());
-        assertEquals(2, entry.getNumRequests());
-        assertEquals(0, entry.getNumFailures());
-        assertEquals(1000L, entry.getMinResponseTime());
-        assertEquals(2000L, entry.getMaxResponseTime());
-        assertEquals(3000L, entry.getTotalResponseTime());
-        assertEquals(6000L, entry.getTotalContentLength());
+        assertThat(entry)
+            .hasName("test")
+            .hasMethod("http")
+            .hasMinResponseTime(1000L)
+            .hasMaxResponseTime(2000L)
+            .hasTotalResponseTime(3000L)
+            .hasTotalContentLength(6000L)
+            .hasNumRequests(2)
+            .hasNumFailures(0)
+            ;
+
         assertEquals(1, (long)entry.getResponseTimes().get(1000L));
         assertEquals(1, (long)entry.getResponseTimes().get(2000L));
 
         StatsEntry total = stats.getTotal();
 
-        assertEquals("Total", total.getName());
-        assertEquals("", total.getMethod());
-        assertEquals(3, total.getNumRequests());
-        assertEquals(0, total.getNumFailures());
-        assertEquals(300L, total.getMinResponseTime());
-        assertEquals(2000L, total.getMaxResponseTime());
-        assertEquals(3300L, total.getTotalResponseTime());
-        assertEquals(6300L, total.getTotalContentLength());
+        assertThat(total)
+            .hasName("Total")
+            .hasMethod("")
+            .hasMinResponseTime(300L)
+            .hasMaxResponseTime(2000L)
+            .hasTotalResponseTime(3300L)
+            .hasTotalContentLength(6300L)
+            .hasNumRequests(3)
+            .hasNumFailures(0)
+        ;
+
         assertEquals(1, (long)total.getResponseTimes().get(300L));
         assertEquals(1, (long)total.getResponseTimes().get(1000L));
         assertEquals(1, (long)total.getResponseTimes().get(2000L));

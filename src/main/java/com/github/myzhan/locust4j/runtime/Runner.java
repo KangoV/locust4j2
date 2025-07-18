@@ -226,11 +226,12 @@ public class Runner {
     }
 
     protected void spawnComplete() {
-        Map<String, Object> data = new HashMap<>(1);
-        data.put("count", this.numClients);
-        data.put("user_classes_count", this.userClassesCountFromMaster);
         try {
-            this.rpcClient.send((new Message("spawning_complete", data, -1, this.nodeID)));
+            this.rpcClient.send(s -> s
+                .type("spawning_complete")
+                .putData("count", this.numClients)
+                .putData("user_classes_count", this.userClassesCountFromMaster)
+                .nodeId(this.nodeID));
         } catch (IOException ex) {
             logger.error("Error while sending a message about the completed spawn", ex);
         }
@@ -238,7 +239,7 @@ public class Runner {
 
     public void quit() {
         try {
-            this.rpcClient.send(new Message("quit", null, -1, this.nodeID));
+            this.rpcClient.send(s -> s.type("quit").nodeId(this.nodeID));
             this.rpcClient.close();
             this.executor.shutdownNow();
         } catch (IOException ex) {
@@ -261,7 +262,7 @@ public class Runner {
     }
 
     private boolean spawnMessageIsValid(Message message) {
-        Map<String, Object> data = message.getData();
+        Map<String, Object> data = message.data();
         if (!data.containsKey("user_classes_count")) {
             logger.debug("Invalid spawn message without user_classes_count, you may use a newer but incompatible version of locust.");
             return false;
@@ -270,7 +271,7 @@ public class Runner {
     }
 
     private int sumUsersAmount(Message message) {
-        Map<String, Integer> userClassesCount = (Map<String, Integer>) message.getData().get("user_classes_count");
+        Map<String, Integer> userClassesCount = (Map<String, Integer>) message.data().get("user_classes_count");
         int amount = 0;
         for (Map.Entry<String, Integer> entry : userClassesCount.entrySet()) {
             amount = amount + entry.getValue();
@@ -280,11 +281,11 @@ public class Runner {
     }
 
     private void onSpawnMessage(Message message) {
-        Map<String, Object> data = message.getData();
+        Map<String, Object> data = message.data();
         int numUsers = sumUsersAmount(message);
 
         try {
-            this.rpcClient.send(new Message("spawning", null, -1, this.nodeID));
+            this.rpcClient.send(s -> s.type("spawning").nodeId(this.nodeID));
         } catch (IOException ex) {
             logger.error("Error while sending a message about spawning", ex);
         }
@@ -299,7 +300,7 @@ public class Runner {
     }
 
     private void onMessage(Message message) {
-        String type = message.getType();
+        String type = message.type();
 
         switch (type) {
             case "ack":
@@ -342,7 +343,7 @@ public class Runner {
                 this.waitForAck.countDown();
                 this.masterConnected = true;
 
-                Map<String, Object> data = message.getData();
+                Map<String, Object> data = message.data();
                 if (data != null && data.containsKey("index")) {
                     this.workerIndex = (int) data.get("index");
                 }
@@ -366,8 +367,8 @@ public class Runner {
                 this.state = RunnerState.Stopped;
                 logger.debug("Recv stop message from master, all the workers are stopped");
                 try {
-                    this.rpcClient.send(new Message("client_stopped", null, -1, this.nodeID));
-                    this.rpcClient.send(new Message("client_ready", null, -1, this.nodeID));
+                    this.rpcClient.send(s -> s.type("client_stopped").nodeId(this.nodeID));
+                    this.rpcClient.send(s -> s.type("client_ready").nodeId(this.nodeID));
                     this.state = RunnerState.Ready;
                 } catch (IOException ex) {
                     logger.error("Error while switching from the state stopped to ready", ex);
@@ -406,7 +407,7 @@ public class Runner {
         });
         this.state = RunnerState.Ready;
         try {
-            this.rpcClient.send(new Message("client_ready", null, -1, this.nodeID));
+            this.rpcClient.send(s -> s.type("client_ready").nodeId(this.nodeID));
         } catch (IOException ex) {
             logger.error("Error while sending a message that the system is ready", ex);
         }
@@ -467,15 +468,22 @@ public class Runner {
                     Map<String, Object> data = runner.stats.getMessageToRunnerQueue().take();
                     if (data.containsKey("current_cpu_usage")) {
                         // It's heartbeat message, moved to here to avoid race condition of zmq socket.
-                        runner.rpcClient.send(new Message("heartbeat", data, -1, runner.nodeID));
+                        runner.rpcClient.send(s -> s
+                            .type("heartbeat")
+                            .putAllData(data)
+                            .nodeId(runner.nodeID));
                         continue;
                     }
                     if (runner.state == RunnerState.Ready || runner.state == RunnerState.Stopped) {
                         continue;
                     }
-                    data.put("user_count", runner.numClients);
-                    data.put("user_classes_count", runner.userClassesCountFromMaster);
-                    runner.rpcClient.send(new Message("stats", data, -1, runner.nodeID));
+                    runner.rpcClient.send(s -> s
+                        .type("stats")
+                        .putAllData(data)
+                        .putData("user_count", runner.numClients)
+                        .putData("user_classes_count", runner.userClassesCountFromMaster)
+                        .nodeId(runner.nodeID)
+                    );
                 } catch (InterruptedException ex) {
                     return;
                 } catch (Exception ex) {

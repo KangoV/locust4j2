@@ -11,46 +11,45 @@ import org.junit.Test;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 /**
  * @author myzhan
  */
-public class TestVisitor {
+public class TestMessageVisitor {
 
     private MessageBufferPacker packer;
-    private Visitor visitor;
 
     @Before
     public void before() {
         packer = MessagePack.newDefaultBufferPacker();
-        visitor = new Visitor(packer);
     }
 
     @Test
     public void TestVisitNull() throws IOException {
-        visitor.visit(null);
-
+        Message.visit(packer, null);
         byte[] result = packer.toByteArray();
 
-        assertEquals(1, result.length);
-        assertEquals(-64, result[0]);
+        assertThat(result).hasSize(1);
+        assertThat(result).startsWith(-64);
     }
 
     @Test
     public void TestVisitString() throws IOException {
-        visitor.visit("HelloWorld");
+        var str = "HelloWorld";
+        Message.visit(packer, str);
 
         byte[] result = packer.toByteArray();
 
-        assertEquals(11, result.length);
-        assertEquals(-86, result[0]);
-        assertEquals("HelloWorld", new String(Arrays.copyOfRange(result, 1, 11)));
+        assertThat(result).hasSize(11);
+        assertThat(result).startsWith(-86);
+        assertThat(Arrays.copyOfRange(result, 1, 11)).containsExactly(str.getBytes());
     }
 
     @Test
     public void TestVisitLong() throws IOException {
-        visitor.visit(Long.MAX_VALUE);
+        Message.visit(packer, Long.MAX_VALUE);
 
         byte[] result = packer.toByteArray();
 
@@ -60,7 +59,7 @@ public class TestVisitor {
 
     @Test
     public void TestVisitDouble() throws IOException {
-        visitor.visit(Double.MAX_VALUE);
+        Message.visit(packer, Double.MAX_VALUE);
 
         byte[] result = packer.toByteArray();
 
@@ -72,7 +71,7 @@ public class TestVisitor {
     public void TestVisitMap() throws IOException {
         Map<String, Object> m = new HashMap<>();
         m.put("foo", "bar");
-        visitor.visit(m);
+        Message.visit(packer, m);
 
         byte[] result = packer.toByteArray();
 
@@ -82,7 +81,7 @@ public class TestVisitor {
 
     @Test
     public void TestVisitList() throws IOException {
-        visitor.visit(Arrays.asList("foo", "bar"));
+        Message.visit(packer, Arrays.asList("foo", "bar"));
 
         byte[] result = packer.toByteArray();
 
@@ -96,7 +95,7 @@ public class TestVisitor {
         data.add(1000L);
         data.add(1000L);
 
-        visitor.visit(data);
+        Message.visit(packer, data);
 
         byte[] result = packer.toByteArray();
 
@@ -106,6 +105,6 @@ public class TestVisitor {
 
     @Test(expected = IOException.class)
     public void TestVisitUnknownType() throws IOException {
-        visitor.visit(BigDecimal.ONE);
+        Message.visit(packer, BigDecimal.ONE);
     }
 }

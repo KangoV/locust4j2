@@ -23,11 +23,10 @@ public class StatsError {
     }
 
     protected Map<String, Object> toMap() {
-        Map<String, Object> m = new HashMap<>(5);
-        m.put("name", this.name);
-        m.put("method", this.method);
-        m.put("error", this.error);
-        m.put("occurrences", this.occurrences);
-        return m;
+        return Map.of(
+            "name",        this.name,
+            "method",      this.method,
+            "error",       this.error,
+            "occurrences", this.occurrences);
     }
 }

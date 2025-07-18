@@ -17,6 +17,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+
+import static com.github.myzhan.locust4j.test.MessageAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,11 +88,11 @@ public class TestRunner {
     public void TestOnInvalidSpawnMessage() {
         runner.getReady();
 
-        Map<String, Object> spawnData = new HashMap<>();
-        spawnData.put("no_user_classes_count", 0f);
         // send spawn message
-        client.getFromServerQueue().offer(new Message(
-            "spawn", spawnData, -1, "test"));
+        client.getFromServerQueue().offer(Message.create(s -> s
+            .type("spawn")
+            .putData("no_user_classes_count", 0f)
+            .nodeId("test")));
 
         try {
             Thread.sleep(10);
@@ -113,14 +116,17 @@ public class TestRunner {
         userClassesCount.put("dummy", 1);
         spawnData.put("user_classes_count", userClassesCount);
         spawnData.put("host", "www.github.com");
+
         // send spawn message
-        client.getFromServerQueue().offer(new Message(
-            "spawn", spawnData, -1, null));
+        client.getFromServerQueue().offer(Message.create(s -> s
+            .type("spawn")
+            .putAllData(spawnData)
+        ));
 
         Message spawning = client.getToServerQueue().take();
-        assertEquals("spawning", spawning.getType());
-        assertNull(spawning.getData());
-        assertEquals(runner.nodeID, spawning.getNodeID());
+        assertEquals("spawning", spawning.type());
+        assertThat(spawning.data()).isEmpty();
+        assertThat(spawning).hasNodeId(runner.nodeID);
 
         // wait for spawn complete
         Thread.sleep(100);
@@ -130,26 +136,24 @@ public class TestRunner {
         Assert.assertEquals("www.github.com", runner.getRemoteParams().get("host"));
 
         Message spawnComplete = client.getToServerQueue().take();
-        assertEquals("spawning_complete", spawnComplete.getType());
-        assertEquals(1, spawnComplete.getData().get("count"));
-        assertEquals(runner.nodeID, spawnComplete.getNodeID());
+        assertEquals("spawning_complete", spawnComplete.type());
+        assertEquals(1, spawnComplete.data().get("count"));
+        assertThat(spawnComplete).hasNodeId(runner.nodeID);
 
         // send stop message
-        client.getFromServerQueue().offer(new Message(
-            "stop", null, -1, null));
+        client.getFromServerQueue().offer(Message.create(s -> s.type("stop")));
         Message clientStopped = client.getToServerQueue().take();
-        assertEquals("client_stopped", clientStopped.getType());
-        assertNull(clientStopped.getData());
-        assertEquals(runner.nodeID, clientStopped.getNodeID());
+        assertEquals("client_stopped", clientStopped.type());
+        assertThat(clientStopped.data()).isEmpty();
+        assertThat(clientStopped).hasNodeId(runner.nodeID);
 
         // send spawn message again
-        client.getFromServerQueue().offer(new Message(
-            "spawn", spawnData, -1, null));
+        client.getFromServerQueue().offer(Message.create(s -> s.type("spawn").putAllData(spawnData)));
 
         Message spawningAgain = client.getToServerQueue().take();
-        assertEquals("spawning", spawningAgain.getType());
-        assertNull(spawningAgain.getData());
-        assertEquals(runner.nodeID, spawningAgain.getNodeID());
+        assertEquals("spawning", spawningAgain.type());
+        assertThat(spawningAgain.data()).isEmpty();
+        assertThat(spawningAgain).hasNodeId(runner.nodeID);
 
         runner.quit();
     }
@@ -159,9 +163,9 @@ public class TestRunner {
         runner.getReady();
 
         Message heartbeat = client.getToServerQueue().take();
-        assertEquals("heartbeat", heartbeat.getType());
-        assertNotNull(heartbeat.getData().get("current_cpu_usage"));
-        assertNotNull(heartbeat.getData().get("state"));
+        assertEquals("heartbeat", heartbeat.type());
+        assertNotNull(heartbeat.data().get("current_cpu_usage"));
+        assertNotNull(heartbeat.data().get("state"));
 
         runner.quit();
     }
@@ -257,8 +261,7 @@ public class TestRunner {
         spawnData.put("host", "www.github.com");
 
         // send spawn message
-        client.getFromServerQueue().offer(new Message(
-                "spawn", spawnData, -1, null));
+        client.getFromServerQueue().offer(Message.create(s -> s.type("spawn").putAllData(spawnData)));
 
         // wait for spawn complete
         Thread.sleep(100);

@@ -14,7 +14,7 @@ import com.github.myzhan.locust4j.AbstractTask;
  */
 public abstract class AbstractTaskSet extends AbstractTask {
 
-    protected List<AbstractTask> tasks;
+    private List<AbstractTask> tasks;
 
     public AbstractTaskSet() {
         this.tasks = new ArrayList<>();
@@ -25,6 +25,8 @@ public abstract class AbstractTaskSet extends AbstractTask {
      *
      * @param task test task that runs in a task set
      */
-    public abstract void addTask(AbstractTask task);
+    public void addTask(AbstractTask task) {
+        tasks.add(task);
+    }
 
 }

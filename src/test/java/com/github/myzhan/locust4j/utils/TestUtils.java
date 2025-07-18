@@ -15,7 +15,7 @@ public class TestUtils {
     }
 
     @Test
-    @Ignore
+    //@Ignore
     public void TestGetHostname() throws IOException {
         Process proc = Runtime.getRuntime().exec("hostname");
         java.io.InputStream is = proc.getInputStream();

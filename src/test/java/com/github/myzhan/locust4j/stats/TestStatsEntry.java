@@ -3,11 +3,9 @@ package com.github.myzhan.locust4j.stats;
 import java.util.Map;
 
 import com.github.myzhan.locust4j.message.LongIntMap;
-import com.github.myzhan.locust4j.stats.StatsEntry;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * @author myzhan
@@ -24,10 +22,11 @@ public class TestStatsEntry {
         entry.logResponseTime(58760);
 
         LongIntMap responseTimes = entry.getResponseTimes();
-        assertEquals(1, responseTimes.get(99L).intValue());
-        assertEquals(1, responseTimes.get(150L).intValue());
-        assertEquals(1, responseTimes.get(3400L).intValue());
-        assertEquals(1, responseTimes.get(59000L).intValue());
+
+        assertThat(responseTimes.get(99L).intValue()).isOne();
+        assertThat(responseTimes.get(150L).intValue()).isOne();
+        assertThat(responseTimes.get(3400L).intValue()).isOne();
+        assertThat(responseTimes.get(59000L).intValue()).isOne();
     }
 
     @Test
@@ -40,23 +39,26 @@ public class TestStatsEntry {
         entry.logError("400 ERROR");
 
         Map<String, Object> serialized = entry.getStrippedReport();
-
-        assertTrue(serialized.containsKey("name"));
-        assertTrue(serialized.containsKey("method"));
-        assertTrue(serialized.containsKey("last_request_timestamp"));
-        assertTrue(serialized.containsKey("start_time"));
-        assertTrue(serialized.containsKey("num_requests"));
-        assertTrue(serialized.containsKey("num_failures"));
-        assertTrue(serialized.containsKey("total_response_time"));
-        assertTrue(serialized.containsKey("max_response_time"));
-        assertTrue(serialized.containsKey("min_response_time"));
-        assertTrue(serialized.containsKey("total_content_length"));
-        assertTrue(serialized.containsKey("response_times"));
-        assertTrue(serialized.containsKey("num_reqs_per_sec"));
+        assertThat(serialized).containsOnlyKeys(
+            "name",
+            "method",
+            "last_request_timestamp",
+            "start_time",
+            "num_requests",
+            "num_failures",
+            "total_response_time",
+            "max_response_time",
+            "min_response_time",
+            "total_content_length",
+            "response_times",
+            "num_reqs_per_sec",
+            "num_fail_per_sec",
+            "num_none_requests"
+        );
 
         // getStrippedReport() will call reset()
-        assertEquals(0, entry.getNumRequests());
-        assertEquals(0, entry.getNumFailures());
+        assertThat(entry.getNumRequests()).isZero();
+        assertThat(entry.getNumFailures()).isZero();
 
     }
 }
