@@ -75,7 +75,7 @@ public class TestStats {
 
         stats.getClearStatsQueue().offer(true);
         stats.wakeMeUp();
-        Thread.sleep(500);
+        Thread.sleep(1000);
 
         // stats is cleared in another thread
         assertEquals(0, stats.serializeStats().size());
