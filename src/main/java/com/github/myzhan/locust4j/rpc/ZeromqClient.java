@@ -42,7 +42,7 @@ public class ZeromqClient implements Client {
     public Message recv() throws IOException {
         try {
             byte[] bytes = this.dealerSocket.recv();
-            return Message.create(s -> s.from(bytes));
+            return MessageDeser.deserialise(bytes);
         } catch (ZMQException ex) {
             throw new IOException("Failed to receive ZeroMQ message", ex);
         }
@@ -50,7 +50,7 @@ public class ZeromqClient implements Client {
 
     @Override
     public void send(Message message) throws IOException {
-        byte[] bytes = message.bytes();
+        byte[] bytes = MessageDeser.serialise(message);
         this.dealerSocket.send(bytes);
     }
 

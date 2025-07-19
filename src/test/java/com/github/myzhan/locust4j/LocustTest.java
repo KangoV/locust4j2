@@ -18,7 +18,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author myzhan
  */
-public class TestLocust {
+public class LocustTest {
 
     static class TestTask extends AbstractTask {
 

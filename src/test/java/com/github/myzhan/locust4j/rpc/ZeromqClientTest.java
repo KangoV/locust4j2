@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 /**
  * @author myzhan
  */
-public class TestZeromqClient {
+public class ZeromqClientTest {
 
     @Test
     public void TestPingPong() throws Exception {

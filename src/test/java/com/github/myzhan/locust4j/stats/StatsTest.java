@@ -3,11 +3,6 @@ package com.github.myzhan.locust4j.stats;
 import java.util.List;
 import java.util.Map;
 
-import com.github.myzhan.locust4j.stats.RequestFailure;
-import com.github.myzhan.locust4j.stats.RequestSuccess;
-import com.github.myzhan.locust4j.stats.Stats;
-import com.github.myzhan.locust4j.stats.StatsEntry;
-import com.github.myzhan.locust4j.test.StatsEntryAssert;
 import com.github.myzhan.locust4j.utils.Utils;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +14,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author myzhan
  */
-public class TestStats {
+public class StatsTest {
 
     private Stats stats;
 
@@ -75,7 +70,7 @@ public class TestStats {
 
         stats.getClearStatsQueue().offer(true);
         stats.wakeMeUp();
-        Thread.sleep(1000);
+        Thread.sleep(2000);
 
         // stats is cleared in another thread
         assertEquals(0, stats.serializeStats().size());

@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class TestRampUpRateLimiter {
+public class RampUpRateLimiterTest {
 
     @Test
     public void TestAcquire() throws Exception {

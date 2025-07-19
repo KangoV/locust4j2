@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author myzhan
  */
-public class TestStatsEntry {
+public class StatsEntryTest {
 
     @Test
     public void TestRoundedResponseTime() {

@@ -8,7 +8,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * @author myzhan
  */
-public class TestStableRateLimiter {
+public class StableRateLimiterTest {
 
     @Test
     public void TestAcquire() throws Exception {

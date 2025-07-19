@@ -12,9 +12,10 @@ import com.github.myzhan.locust4j.AbstractTask;
 import com.github.myzhan.locust4j.LocustTestHelper;
 import com.github.myzhan.locust4j.message.Message;
 import com.github.myzhan.locust4j.stats.Stats;
+import org.assertj.core.api.Assertions;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
@@ -31,15 +32,15 @@ import static org.junit.Assert.assertNull;
 /**
  * @author myzhan
  */
-public class TestRunner {
+public class RunnerTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(TestRunner.class);
+    private static final Logger logger = LoggerFactory.getLogger(RunnerTest.class);
 
     private Runner runner;
 
     private MockRPCClient client;
 
-    @Before
+    @BeforeEach
     public void before() {
         runner = new Runner();
         runner.setStats(new Stats());
@@ -80,7 +81,7 @@ public class TestRunner {
     @Test
     public void TestStartSpawning() {
         runner.startSpawning(10);
-        assertEquals(10, runner.numClients);
+        assertThat(runner.numClients).isEqualTo(10);
         runner.stop();
     }
 

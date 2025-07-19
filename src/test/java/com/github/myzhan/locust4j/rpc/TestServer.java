@@ -42,8 +42,8 @@ public class TestServer {
                         routerSocket.sendMore(packet);
                         continue;
                     }
-                    var message = Message.from(packet);
-                    routerSocket.send(message.bytes(), 0);
+                    var message = MessageDeser.deserialise(packet);
+                    routerSocket.send(MessageDeser.serialise(message), 0);
                 }
             } catch (ZMQException ex) {
                 // ignore ZMQException, it may be interrupted.

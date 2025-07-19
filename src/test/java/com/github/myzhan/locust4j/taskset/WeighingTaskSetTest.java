@@ -11,9 +11,9 @@ import static org.junit.Assert.assertNull;
 /**
  * @author myzhan
  */
-public class TestWeighingTaskSet {
+public class WeighingTaskSetTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(TestWeighingTaskSet.class);
+    private static final Logger logger = LoggerFactory.getLogger(WeighingTaskSetTest.class);
 
     private static class TestTask extends AbstractTask {
         public int weight;

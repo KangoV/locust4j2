@@ -1,5 +1,6 @@
 package com.github.myzhan.locust4j.message;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -11,6 +12,26 @@ public class LongIntMap {
 
     public LongIntMap() {
         internalStore = new HashMap<>(16);
+    }
+
+    public LongIntMap(long ... vals) {
+        this();
+        assert vals!=null;
+        for (long v : vals) {
+            add(v);
+        }
+    }
+
+    public <I extends Iterable<Long>> LongIntMap(I iterable) {
+        this();
+        assert iterable!=null;
+        for (long v : iterable) {
+            add(v);
+        }
+    }
+
+    public Map<Long,Integer> asMap() {
+        return Collections.unmodifiableMap(internalStore);
     }
 
     public Integer get(Long k) {
